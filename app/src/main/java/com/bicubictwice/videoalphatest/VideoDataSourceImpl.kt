@@ -22,7 +22,7 @@ internal class VideoDataSourceImpl(context: Context, uri: Uri) : VideoDataSource
         .apply { limit(0) }
 
     override fun getMediaFormat(): MediaFormat {
-        return requireNotNull(mediaFormat)
+        return mediaFormat!!
     }
 
     override fun getNextSampleData(): ByteBuffer {
@@ -36,9 +36,8 @@ internal class VideoDataSourceImpl(context: Context, uri: Uri) : VideoDataSource
     }
 
     private fun MediaExtractor.setVideoTrack() {
-        val availableMimeTypes = (0 until this.trackCount)
-            .map { this.getTrackFormat(it) }
-            .mapNotNull { it.getString(MediaFormat.KEY_MIME) }
+        val availableMimeTypes =
+            (0 until trackCount).mapNotNull { getTrackFormat(it).getString(MediaFormat.KEY_MIME) }
 
         val videoTrackIndex = availableMimeTypes
             .indexOfFirst { it.startsWith("video/") }

@@ -23,8 +23,8 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun VideoAnimationWidget(
-    modifier: Modifier = Modifier,
-    @RawRes resourceId: Int
+    @RawRes resourceId: Int,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var lastFrame by remember { mutableStateOf<Bitmap?>(null) }

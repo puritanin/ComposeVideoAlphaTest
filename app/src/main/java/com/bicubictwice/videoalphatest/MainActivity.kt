@@ -99,10 +99,10 @@ class MainActivity : ComponentActivity() {
 
             for (index in 0 until 3) {
                 VideoAnimationWidget(
+                    resourceId = R.raw.sample,
                     modifier = Modifier
                         .size(100.dp)
-                        .offset(30.dp + (index * 50).dp, (index * 100).dp),
-                    resourceId = R.raw.sample
+                        .offset(30.dp + (index * 50).dp, (index * 100).dp)
                 )
             }
         }

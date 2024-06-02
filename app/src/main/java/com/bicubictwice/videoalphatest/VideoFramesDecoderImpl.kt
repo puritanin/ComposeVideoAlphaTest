@@ -19,24 +19,24 @@ import kotlin.random.Random
 
 internal class VideoFramesDecoderImpl(private val mediaFormat: MediaFormat) : VideoFramesDecoder {
 
-    private val mimeType = requireNotNull(mediaFormat.getString(MediaFormat.KEY_MIME))
-    private val frameRate = requireNotNull(mediaFormat.getInteger(MediaFormat.KEY_FRAME_RATE))
+    private val mimeType = mediaFormat.getString(MediaFormat.KEY_MIME)!!
+    private val frameRate = mediaFormat.getInteger(MediaFormat.KEY_FRAME_RATE)
 
-    private val nowMillis: Long
+    private val nowMs: Long
         get() = System.currentTimeMillis()
 
-    private val rnd = Random(nowMillis)
+    private val random = Random(nowMs)
 
     override fun getOutputFramesFlow(inputSampleDataCallback: () -> ByteBuffer): Flow<Bitmap> {
         return channelFlow {
-            val threadName = "${this.javaClass.name}_HandlerThread_${rnd.nextLong()}"
+            val threadName = "${this.javaClass.name}_HandlerThread_${random.nextLong()}"
             val handlerThread = HandlerThread(threadName).apply { start() }
             val handler = Handler(handlerThread.looper)
 
             val decoder = MediaCodec.createDecoderByType(mimeType)
 
-            val frameIntervalMillis = (1000f / frameRate).toLong()
-            var nextFrameTimestamp = nowMillis
+            val frameIntervalMs = (1_000f / frameRate).toLong()
+            var nextFrameTimestamp = nowMs
 
             val callback = object : MediaCodec.Callback() {
 
@@ -53,27 +53,31 @@ internal class VideoFramesDecoderImpl(private val mediaFormat: MediaFormat) : Vi
                     runCatching {
                         codec.getOutputImage(index)?.let { frame ->
                             val bitmap = frame.toBitmap()
-                            val diff = (nextFrameTimestamp - nowMillis).coerceAtLeast(0L)
+                            val diff = (nextFrameTimestamp - nowMs).coerceAtLeast(0L)
                             runBlocking { delay(diff) }
                             trySend(bitmap)
-                            nextFrameTimestamp = nowMillis + frameIntervalMillis
+                            nextFrameTimestamp = nowMs + frameIntervalMs
                         }
                         codec.releaseOutputBuffer(index, false)
                     }
                 }
 
-                override fun onError(codec: MediaCodec, e: MediaCodec.CodecException) {}
+                override fun onError(codec: MediaCodec, e: MediaCodec.CodecException) = Unit
 
-                override fun onOutputFormatChanged(codec: MediaCodec, format: MediaFormat) {}
+                override fun onOutputFormatChanged(codec: MediaCodec, format: MediaFormat) = Unit
             }
 
-            decoder.setCallback(callback, handler)
-            decoder.configure(mediaFormat, null, null, 0)
-            decoder.start()
+            decoder.apply {
+                setCallback(callback, handler)
+                configure(mediaFormat, null, null, 0)
+                start()
+            }
 
             awaitClose {
-                decoder.stop()
-                decoder.release()
+                decoder.apply {
+                    stop()
+                    release()
+                }
             }
         }.conflate()
     }
