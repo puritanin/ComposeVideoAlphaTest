@@ -1,1 +1,1 @@
-https://habr.com/ru/companies/finam_broker/articles/828322/
+https://habr.com/p/828322/
